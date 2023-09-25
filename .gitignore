@@ -1,0 +1,11 @@
+node_modules
+# Keep environment variables out of version control
+.env
+certs
+package-lock.json
+yarn.lock
+dist
+.idea
+ecosystem.config.ts
+uploads
+ecosystem.config.js

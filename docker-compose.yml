@@ -1,0 +1,38 @@
+version: '3.9'
+services:
+  database:
+    image: bitnami/postgresql
+    ports: 
+      - 5432:5432
+    environment:
+      # - POSTGRESQL_USERNAME=api
+      - POSTGRESQL_PASSWORD=docker
+      - POSTGRESQL_DATABASE=TREEPY
+    # image: mysql:8
+    # command: mysqld --authentication_policy=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    # restart: always
+    # container_name: '${APP_NAME}-db'
+    # ports:
+    #   - 3306:3306
+    # environment:
+    #   - 'MYSQL_USER=from'
+    #   - 'MYSQL_PASSWORD=senha'
+    #   - 'MYSQL_DATABASE=from'
+    #   - 'MYSQL_ROOT_PASSWORD=senha'
+  app:
+    build: .
+    container_name: '${APP_NAME}'
+    ports:
+      - '${API_PORT}:${API_PORT}'
+    volumes:
+      - '.:/usr/src/${APP_NAME}'
+    links:
+      - database
+    depends_on:
+      - database
+    # command: sh -c "/wait; yarn; yarn prisma db pull; yarn dev"
+    # environment:
+    #   - 'WAIT_HOSTS=database:${DATABASE_PORT}'
+    #   - WAIT_TIMEOUT=300
+    #   - WAIT_SLEEP_INTERVAL=5
+    #   - WAIT_HOST_CONNECT_TIMEOUT=15

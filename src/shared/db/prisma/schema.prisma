@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model api_request {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  request    String
+  response   String
+  created_at DateTime @default(now())
+}
+
+model doctrine_migration_versions {
+  version        String    @id
+  executed_at    DateTime? @default(now())
+  execution_time Int?
+}
+
+model messenger_messages {
+  id           BigInt    @id @default(autoincrement())
+  body         String
+  headers      String
+  queue_name   String    @db.VarChar(190)
+  created_at   DateTime  @default(now())
+  available_at DateTime  @default(now())
+  delivered_at DateTime? @default(now())
+
+  @@index([delivered_at], map: "IDX_75EA56E016BA31DB")
+  @@index([available_at], map: "IDX_75EA56E0E3BD61CE")
+  @@index([queue_name], map: "IDX_75EA56E0FB7336F0")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model referral_history {
+  id                                      Int       @id @default(autoincrement())
+  referral_id                             Int
+  user_id                                 Int?
+  game                                    String?   @db.VarChar(100)
+  amount                                  Int?
+  type                                    String?   @db.VarChar(100)
+  available                               Boolean?
+  created_at                              DateTime? @default(now())
+  updated_at                              DateTime? @default(now())
+  user_referral_history_referral_idTouser user      @relation("referral_history_referral_idTouser", fields: [referral_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_7E9A2C6D3CCAA4B7")
+  user_referral_history_user_idTouser     user?     @relation("referral_history_user_idTouser", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_7E9A2C6DA76ED395")
+
+  @@index([referral_id], map: "IDX_7E9A2C6D3CCAA4B7")
+  @@index([user_id], map: "IDX_7E9A2C6DA76ED395")
+}
+
+model referral_settings {
+  id                Int     @id @default(autoincrement())
+  cpa               Int?
+  rev_share_percent Int?
+  referral_type     String? @db.VarChar(10)
+  user              user?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model settings {
+  id            Int    @id @default(autoincrement())
+  settings_json String
+  ttl           Int
+}
+
+model user {
+  id                                                  Int                      @id @default(autoincrement())
+  wallet_id                                           Int                      @unique(map: "UNIQ_8D93D649712520F3")
+  referral_id                                         Int?
+  referral_settings_id                                Int?                     @unique(map: "UNIQ_8D93D6493E58724C")
+  username                                            String                   @unique(map: "UNIQ_8D93D649F85E0677") @db.VarChar(120)
+  created_at                                          DateTime?                @default(now())
+  updated_at                                          DateTime?                @default(now())
+  cpa_collected                                       Boolean?
+  is_referrer                                         Boolean?                 @default(false)
+  born_date                                           DateTime?                @db.Date
+  document                                            String?                  @db.VarChar(30)
+  document_type                                       String?                  @db.VarChar(20)
+  email                                               String                   @unique(map: "UNIQ_8D93D649E7927C74") @db.VarChar(180)
+  full_name                                           String?                  @db.VarChar(100)
+  password                                            String?                  @db.VarChar(255)
+  phone                                               String?                  @db.VarChar(25)
+  reset_password_token                                String?                  @db.VarChar(6)
+  is_bann                                             Boolean                  @default(false)
+  is_admin                                            Boolean?                 @default(false)
+  Document                                            document[]
+  password_reset_request                              password_reset_request[]
+  payments                                            payments[]
+  referral_history_referral_history_referral_idTouser referral_history[]       @relation("referral_history_referral_idTouser")
+  referral_history_referral_history_user_idTouser     referral_history[]       @relation("referral_history_user_idTouser")
+  user                                                user?                    @relation("userTouser", fields: [referral_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8D93D6493CCAA4B7")
+  other_user                                          user[]                   @relation("userTouser")
+  referral_settings                                   referral_settings?       @relation(fields: [referral_settings_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8D93D6493E58724C")
+  wallet                                              wallet                   @relation(fields: [wallet_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8D93D649712520F3")
+  withdraws                                           withdraws[]
+
+  @@index([referral_id], map: "IDX_8D93D6493CCAA4B7")
+}
+
+model wallet {
+  id                 Int                  @id @default(autoincrement())
+  balance            Int?
+  bonus              Float?
+  bet                Float?
+  withdraw           Float?
+  deposit            Float?
+  user               user?
+  wallet_transaction wallet_transaction[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model wallet_transaction {
+  id                                                          Int        @id @default(autoincrement())
+  wallet_id                                                   Int
+  amount                                                      Int
+  created_at                                                  DateTime   @default(now())
+  updated_at                                                  DateTime   @default(now())
+  deleted_at                                                  DateTime?  @default(now())
+  type                                                        String     @db.VarChar(50)
+  uuid                                                        String     @db.VarChar(255)
+  payment_id                                                  Int?       @unique(map: "UNIQ_7DAF9724C3A3BB")
+  withdraw_id                                                 Int?       @unique(map: "UNIQ_7DAF972CD84EE37")
+  payments_payments_wallet_transaction_idTowallet_transaction payments?  @relation("payments_wallet_transaction_idTowallet_transaction")
+  payments_wallet_transaction_payment_idTopayments            payments?  @relation("wallet_transaction_payment_idTopayments", fields: [payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_7DAF9724C3A3BB")
+  wallet                                                      wallet     @relation(fields: [wallet_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_7DAF972712520F3")
+  withdraws                                                   withdraws? @relation(fields: [withdraw_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_7DAF972CD84EE37")
+
+  @@index([wallet_id], map: "IDX_7DAF972712520F3")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payments {
+  id                                                                    Int                 @id @default(autoincrement())
+  user_id                                                               Int
+  amount                                                                Int
+  external_id                                                           String?             @db.VarChar(255)
+  status                                                                String?             @db.VarChar(50)
+  expiration_date                                                       DateTime?           @default(now())
+  created_at                                                            DateTime?           @default(now())
+  updated_at                                                            DateTime?           @default(now())
+  wallet_transaction_id                                                 Int?                @unique(map: "UNIQ_65D29B32924C1837")
+  bonus_users                                                           bonus_users[]
+  wallet_transaction_payments_wallet_transaction_idTowallet_transaction wallet_transaction? @relation("payments_wallet_transaction_idTowallet_transaction", fields: [wallet_transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_65D29B32924C1837")
+  user                                                                  user                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_65D29B32A76ED395")
+  wallet_transaction_wallet_transaction_payment_idTopayments            wallet_transaction? @relation("wallet_transaction_payment_idTopayments")
+
+  @@index([user_id], map: "IDX_65D29B32A76ED395")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model withdraws {
+  id                 Int                 @id @default(autoincrement())
+  user_id            Int
+  txid               String              @db.VarChar(255)
+  withdraw_fee       Float?
+  document_type      String?             @db.VarChar(10)
+  document           String?             @db.VarChar(50)
+  status             withdraws_status?   @default(pendente)
+  created_at         DateTime            @default(now())
+  updated_at         DateTime            @default(now())
+  amount             Int?
+  is_deposit         Boolean             @default(false)
+  wallet_transaction wallet_transaction?
+  user               user                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_C0CAF17A76ED395")
+
+  @@index([user_id], map: "IDX_C0CAF17A76ED395")
+}
+
+model bonus {
+  id               Int           @id @default(autoincrement())
+  name             String        @db.VarChar(255)
+  limit            Int?
+  limit_user       Int?
+  days_expire      Int           @default(7)
+  status           String        @default("ativo") @db.VarChar(15)
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @default(now())
+  img_url          String?       @db.VarChar(255)
+  maximiun_deposit Int?
+  minimiun_deposit Int           @default(100)
+  rollover_percent Int           @default(1)
+  percentage       Int           @default(1)
+  bonus_users      bonus_users[]
+}
+
+model bonus_users {
+  id         Int       @id @default(autoincrement())
+  bonus_id   Int
+  user_id    Int
+  status     String    @default("aceito") @db.VarChar(15)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  payment_id Int?
+  bonus      bonus     @relation(fields: [bonus_id], references: [id])
+  payments   payments? @relation(fields: [payment_id], references: [id])
+
+  // @@index([bonus_id], map: "bonus_users_bonus_id_fkey")
+  // @@index([payment_id], map: "bonus_users_payment_id_fkey")
+}
+
+model rollovers {
+  id             Int       @id @default(autoincrement())
+  bonus_id       Int?
+  user_id        Int
+  expected_value Int
+  moviment_atual Int
+  status         String    @default("Em Aberto") @db.VarChar(50)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now())
+  expire_at      DateTime?
+}
+
+model password_reset_request {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  created_at DateTime @default(now())
+  expires_at DateTime
+  is_active  Boolean  @default(true)
+  user       user     @relation(fields: [user_id], references: [id])
+
+  // @@index([user_id], map: "password_reset_request_user_id_fkey")
+}
+
+model cpa_affiliated {
+  id               Int      @id @default(autoincrement())
+  affiliated_id    Int
+  minimium_deposit Int
+  maximium_deposit Int?
+  colleted_value   Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now())
+}
+
+model cpa_colleted {
+  id             Int      @id @default(autoincrement())
+  affiliated_id  Int
+  user_id        Int
+  deposit        Int
+  colleted_value Int
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+}
+
+model document {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  file_one   String
+  file_two   String
+  status     Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  desc       String?
+  user       user     @relation(fields: [user_id], references: [id])
+
+  // @@index([user_id], map: "document_user_id_fkey")
+}
+
+enum withdraws_status {
+  pendente
+  realizado
+  cancelado
+  reprovado
+}
